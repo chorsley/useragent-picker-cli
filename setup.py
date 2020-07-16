@@ -3,7 +3,7 @@ Generates random but realistic user agents on a command line (or via API)
 """
 from setuptools import find_packages, setup
 
-dependencies = ['docopt', 'requests']
+dependencies = ['docopt', 'requests', 'loguru']
 
 setup(
     name='ua_gen_cli',
@@ -41,7 +41,6 @@ setup(
         'Operating System :: Unix',
         'Operating System :: Microsoft :: Windows',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ]
