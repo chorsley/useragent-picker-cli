@@ -7,21 +7,16 @@ ua_rules = [
     {'match': 'mobile', 'aliases': ['mobile', 'mob'], 'cat': 'deviceCategory'},
     {'match': 'desktop', 'aliases': ['desktop', 'desk'], 'cat': 'deviceCategory'},
     {'match': 'tablet', 'aliases': ['tablet', 'tab'], 'cat': 'deviceCategory'},
-    {'match': 'Netscape', 'aliases': ['netscape', 'firefox', 'ff'], 'regex': r'Firefox/\d', 'cat': 'appName'},
-    # TODO: bad detection in file here
-    {'match': 'Google Inc.', 'aliases': ['ie', 'msie'], 'regex': r'MSIE \d', 'cat': 'vendor'},
-    # TODO: match is way too broad, but regex saves it.
-    # TODO: seems to be a detection issue in file, should switch to own UA feature detection
-    {'match': 'Win32', 'aliases': ['edge'], 'cat': 'platform', 'regex': r'Edg/\d'},
-    # TODO: missing from DB currently?
-    # {'match': 'Opera', 'aliases': ['opera'], 'cat': 'appName'},
+    {'match': 'Firefox', 'aliases': ['netscape', 'firefox', 'ff'], 'cat': 'browser_family'},
+    {'match': 'IE', 'aliases': ['ie', 'msie', 'iexplore', 'internet explorer'], 'cat': 'browser_family'},
+    {'match': 'Edge', 'aliases': ['edge'], 'cat': 'browser_family'},
+    {'match': 'Opera', 'aliases': ['opera'], 'cat': 'browser_family'},
+    {'match': 'Safari', 'aliases': ['safari'], 'cat': 'browser_family'},
     # Chrome, which we have to define more specifically since everyone has in agent
-    {'match': 'Google Inc.', 'aliases': ['chrome'], 'cat': 'vendor', 'regex': r'Chrome'},
-    {'match': 'Win32', 'aliases': ['win32', 'win', 'windows'], 'cat': 'platform'},
-    {'match': 'MacIntel', 'aliases': ['macintel', 'osx', 'Mac', 'MacOS'], 'cat': 'platform'},
-    {'match': 'Linux x86_64', 'aliases': ['linux', 'x11'], 'cat': 'platform'},
-    # TODO: not much to separate it from Chrome unless you have good detection, so we need to add this.
-    {'match': 'Netscape', 'aliases': ['safari'], 'cat': 'appName', 'regex': r'AppleWebKit/\d'},
+    {'match': 'Chrome', 'aliases': ['chrome'], 'cat': 'browser_family'},
+    {'match': 'Windows', 'aliases': ['win32', 'win', 'windows'], 'cat': 'platform'},
+    {'match': 'Mac OS X', 'aliases': ['macintel', 'osx', 'Mac', 'MacOS'], 'cat': 'platform'},
+    {'match': 'Linux', 'aliases': ['linux', 'x11'], 'cat': 'platform'},
 ]
 
 __all__ = ['ua_rules']
