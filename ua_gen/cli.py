@@ -2,7 +2,7 @@
 
 Usage:
   uagen
-  uagen [--update-db] FILTER...
+  uagen [--force-update-db] FILTER...
   uagen (-h | --help)
   uagen --version
 
@@ -11,9 +11,9 @@ Arguments:
               Give a number of keyword filters like 'Win', 'Firefox'
 
 Options:
-  --update-db  Force an update of the UA DB cache
-  -h --help    Show this screen.
-  --version    Show version.
+  --force-update-db  Force an update of the UA DB cache
+  -h --help          Show this screen.
+  --version          Show version.
 """
 
 import os.path
@@ -23,6 +23,7 @@ import os
 import time
 import json
 import random
+import re
 
 from docopt import docopt
 import requests
@@ -38,7 +39,7 @@ def main():
     """Generates random but realistic user agents on a command line (or via API)"""
     args = docopt(__doc__)
 
-    if (args["--update-db"]):
+    if (args["--force-update-db"]):
         ua_db = UADBManager()
         ua_db.fetch_db()
 
@@ -47,13 +48,18 @@ def main():
 
 
 class UAGen(object):
-    def __init__(self):
-        self.db_manager = UADBManager()
-        if (self.db_manager.is_too_old()):
-            logger.info("UA DB stale, fetching a fresh one...")
-            self.db_manager.fetch_db()
+    def __init__(self, ua_db=None):
+        # normal operation
+        if not ua_db:
+            self.db_manager = UADBManager()
+            if (self.db_manager.is_too_old()):
+                logger.info("UA DB stale, fetching a fresh one...")
+                self.db_manager.fetch_db()
 
-        self.ua_db = self.db_manager.load_ua_defs()
+            self.ua_db = self.db_manager.load_ua_defs()
+        # usually for testing
+        else:
+            self.ua_db = ua_db
         self.filtered_ua_db = []
         self.ua_rule = None
 
@@ -68,21 +74,16 @@ class UAGen(object):
 
     def filter_uas(self):
         for ua_entry in self.ua_db:
-            #print(ua_entry)
             if self._match_criteria(ua_entry):
                 self.filtered_ua_db.append(ua_entry)
-        #print(self.filtered_ua_db)
-        #print(self.ua_rule)
 
     def _match_criteria(self, ua_entry: dict) -> bool:
-        #print(f"Using rule {self.ua_rule}")
-        #print(f"Checking entry: {ua_entry}")
         for criteria in ['platform', 'vendor', 'deviceCategory']:
-            #print(f"Rule: {getattr(self.ua_rule, criteria)}, {ua_entry.get(criteria)}")
-            #print(getattr(self.ua_rule, criteria))
-            #print(ua_entry.get(criteria))
             if getattr(self.ua_rule, criteria) != None and ua_entry.get(criteria) != getattr(self.ua_rule, criteria):
                 return False
+
+        if regex
+
         return True
 
 
@@ -93,9 +94,10 @@ class UARuleManager(object):
         self.platform = None
         self.vendor = None
         self.deviceCategory = None
+        self.regex = None
 
     def __str__(self):
-        return(f"Rule: platform {self.platform}, vendor {self.vendor}, deviceCategory {self.deviceCategory}")
+        return(f"Rule: platform {self.platform}, vendor {self.vendor}, deviceCategory {self.deviceCategory}, regex {self.regex}")
 
     def build_rules(self):
         for rule in ua_rules:
@@ -133,7 +135,6 @@ class UADBManager(object):
         logger.debug(f"DB file: {self.db_file_path}")
 
         self.ua_db = []
-        self.load_ua_defs()
 
     def fetch_db(self):
         r = requests.get(UA_DB_URL, stream=True)
@@ -160,6 +161,7 @@ class UADBManager(object):
                     'deviceCategory': entry.get("deviceCategory"),
                     'weight': entry.get("weight")
                 })
+        print(self.ua_db)
         return(self.ua_db)
 
 

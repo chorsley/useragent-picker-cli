@@ -2,10 +2,6 @@ import pytest
 from ua_gen import cli
 
 
-@pytest.fixture
-def runner():
-    return CliRunner()
-
 
 def test_cli(runner):
     result = runner.invoke(cli.main)
