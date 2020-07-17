@@ -40,14 +40,13 @@ UA_DB_STALE_SECONDS = 24 * 60 * 60 * 30
 logger.remove()
 logger.add(sys.stderr, format="{message}", level="INFO")
 
+
 class NoUserAgentFoundException(Exception):
     pass
 
 
-def main():
+def main(args):
     """Generates random but realistic user agents on a command line (or via API)"""
-    args = docopt(__doc__)
-
     if (args["--force-update-db"]):
         ua_db = UADBManager()
         ua_db.fetch_db()
@@ -111,6 +110,10 @@ class UAGen(object):
 
 
 class UARuleManager(object):
+    """
+    Builds the criteria rules from the user's filter terms and the ua_rules file.
+    """
+
     def __init__(self, aliases:list=None, strmatch:str=None):
         self.strmatch = strmatch
         self.platform = None
@@ -133,7 +136,7 @@ class UARuleManager(object):
                     used_aliases.append(alias)
 
         for alias in set(all_aliases).difference(set(used_aliases)):
-            logger.info(f"'{alias}' didn't match any known filters, looking in browser strings")
+            logger.info(f"** '{alias}' didn't match any known filters, matching browser strings")
             self.search_strings.append(alias)
 
     def set_rule(self, alias:str, rule:dict) -> None:
@@ -160,6 +163,15 @@ class UARuleManager(object):
 
 
 class UADBManager(object):
+    """
+    Manages downloading, enriching, updating, and returning the master list
+    of user agent definitions.
+
+    The original UA definitions file has some inaccuracies, notably listing
+    the vendor as Google everywhere, including for IE. Since it has valuable
+    weightings as seen in a user population, we instead do some of our own
+    user agent parsing with user_agents for higher accuracy.
+    """
     def __init__(self):
         self.db_dir = os.path.join(os.path.expanduser("~"), ".ua-gen-cli/")
         self.raw_db_file_path = os.path.join(self.db_dir, "raw_ua_db.json")
@@ -229,4 +241,6 @@ class UADBManager(object):
 
 
 if __name__ == "__main__":
-    main()
+    args = docopt(__doc__)
+
+    main(args)
