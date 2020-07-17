@@ -24,6 +24,7 @@ import time
 import json
 import random
 import re
+import sys
 
 from docopt import docopt
 import requests
@@ -33,6 +34,12 @@ from ua_gen import ua_rules
 
 UA_DB_URL = 'https://raw.githubusercontent.com/intoli/user-agents/master/src/user-agents.json.gz'
 UA_DB_STALE_SECONDS = 24 * 60 * 60 * 30
+
+logger.remove()
+logger.add(sys.stderr, format="{message}", level="INFO")
+
+class NoUserAgentFoundException(Exception):
+    pass
 
 
 def main():
@@ -44,7 +51,12 @@ def main():
         ua_db.fetch_db()
 
     uagen = UAGen()
-    print(uagen.get_ua(aliases=args["FILTER"]))
+
+    try:
+        print(uagen.get_ua(aliases=args["FILTER"]))
+    except NoUserAgentFoundException:
+        logger.error("Sorry, couldn't find any user agents matching your criteria") 
+        sys.exit(1)
 
 
 class UAGen(object):
@@ -62,6 +74,7 @@ class UAGen(object):
             self.ua_db = ua_db
         self.filtered_ua_db = []
         self.ua_rule = None
+        self.selected_ua = None
 
     def get_ua(self, aliases: list) -> None:
         self.ua_rule = UARuleManager(aliases)
@@ -69,8 +82,13 @@ class UAGen(object):
         self.ua_rule.build_rules()
         self.filter_uas()
 
+        # we keep self.selected_ua for testing, mostly
         # TODO: weight
-        return random.choice(self.filtered_ua_db)["userAgent"]
+        try:
+            self.selected_ua = random.choice(self.filtered_ua_db)
+        except IndexError:  # nothing in the list
+            raise NoUserAgentFoundException("No user agents matched your filter criteria")
+        return self.selected_ua["userAgent"]
 
     def filter_uas(self):
         for ua_entry in self.ua_db:
@@ -82,19 +100,21 @@ class UAGen(object):
             if getattr(self.ua_rule, criteria) != None and ua_entry.get(criteria) != getattr(self.ua_rule, criteria):
                 return False
 
-        if regex
+        for regex in self.ua_rule.regexes:
+            if not re.search(regex, ua_entry.get("userAgent", "")):
+                return False
 
         return True
 
 
 class UARuleManager(object):
     def __init__(self, aliases:list=None, strmatch:str=None):
-        self.aliases = [] if None else aliases
         self.strmatch = strmatch
         self.platform = None
         self.vendor = None
         self.deviceCategory = None
-        self.regex = None
+        self.regexes = []
+        self.aliases = [] if None else aliases
 
     def __str__(self):
         return(f"Rule: platform {self.platform}, vendor {self.vendor}, deviceCategory {self.deviceCategory}, regex {self.regex}")
@@ -109,19 +129,23 @@ class UARuleManager(object):
         if not self.vendor and rule['cat'] == 'vendor':
             self.vendor = rule['match']
         elif rule["cat"] == 'vendor':
-            logger.warn("You already have a browser vendor f{self.vendor} set and you tried to set"
+            logger.warn("You already have a browser vendor f{self.vendor} set and you tried to set "
                         "another, but I'm ignoring it: f{alias}")
         
         if not self.platform and rule['cat'] == 'platform':
             self.platform = rule['match']
         elif rule['cat'] == 'platform':
-            logger.warn("You already have an OS f{self.playform} set and you tried to set"
+            logger.warn("You already have an OS f{self.platform} set and you tried to set "
                         "another, but I'm ignoring it: f{alias}")
 
         if not self.deviceCategory and rule['cat'] == 'deviceCategory':
             self.deviceCategory = rule['match']
         elif rule['cat'] == 'deviceCategory':
-            logger.warn("You already have an OS f{self.playform} set and you tried to set")
+            logger.warn("You already have an OS f{self.platform} set and you tried to set "
+                        "another, but I'm ignoring it: f{alias}")
+
+        if rule.get('regex'):
+            self.regexes.append(rule['regex'])
 
 
 class UADBManager(object):
@@ -161,7 +185,6 @@ class UADBManager(object):
                     'deviceCategory': entry.get("deviceCategory"),
                     'weight': entry.get("weight")
                 })
-        print(self.ua_db)
         return(self.ua_db)
 
 
