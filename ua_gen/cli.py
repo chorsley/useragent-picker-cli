@@ -98,14 +98,14 @@ class UAGen(object):
                 self.filtered_ua_db.append(ua_entry)
 
     def _match_criteria(self, ua_entry: dict) -> bool:
-        for criteria in ['platform', 'vendor', 'deviceCategory', 'browser_family']:
-            if (getattr(self.ua_rule, criteria) != None and \
+        for criteria in ['platform', 'deviceCategory', 'browser_family']:
+            if (getattr(self.ua_rule, criteria) and \
                 ua_entry.get(criteria) != getattr(self.ua_rule, criteria)):
                 return False
 
-        for regex in self.ua_rule.regexes:
-            if not re.search(regex, ua_entry.get("userAgent", "")):
-                return False
+        for search_string in self.ua_rule.search_strings:
+            if not search_string in ua_entry.get("userAgent", "").lower():
+               return False
 
         return True
 
@@ -114,28 +114,29 @@ class UARuleManager(object):
     def __init__(self, aliases:list=None, strmatch:str=None):
         self.strmatch = strmatch
         self.platform = None
-        self.vendor = None
         self.deviceCategory = None
         self.browser_family = None
-        self.regexes = []
+        self.search_strings = []
         self.aliases = [] if None else aliases
 
     def __str__(self):
-        return(f"Rule: platform {self.platform}, vendor {self.vendor}, deviceCategory {self.deviceCategory}, regex {self.regexes}")
+        return(f"Rule: platform {self.platform}, deviceCategory {self.deviceCategory}, browser_family: {self.browser_family}, regex {self.search_strings}")
 
     def build_rules(self):
+        used_aliases = []
+        all_aliases = list(map(lambda x: x.lower(), self.aliases))
+
         for rule in ua_rules:
-            for alias in map(lambda x: x.lower(), self.aliases):
+            for alias in all_aliases:
                 if alias in map(lambda y: y.lower(), rule["aliases"]):
                     self.set_rule(alias, rule)
+                    used_aliases.append(alias)
+
+        for alias in set(all_aliases).difference(set(used_aliases)):
+            logger.info(f"'{alias}' didn't match any known filters, looking in browser strings")
+            self.search_strings.append(alias)
 
     def set_rule(self, alias:str, rule:dict) -> None:
-        if not self.vendor and rule['cat'] == 'vendor':
-            self.vendor = rule['match']
-        elif rule["cat"] == 'vendor':
-            logger.warn("You already have a browser vendor f{self.vendor} set and you tried to set "
-                        "another, but I'm ignoring it: f{alias}")
-        
         if not self.platform and rule['cat'] == 'platform':
             self.platform = rule['match']
         elif rule['cat'] == 'platform':
@@ -151,12 +152,11 @@ class UARuleManager(object):
         if not self.browser_family and rule['cat'] == 'browser_family':
             self.browser_family = rule['match']
         elif rule['cat'] == 'browser_family':
-            logger.warn("You already have a browser f{self.platform} set and you tried to set "
+            logger.warn("You already have a browser f{self.browser_family} set and you tried to set "
                         "another, but I'm ignoring it: f{alias}")
 
-
         if rule.get('regex'):
-            self.regexes.append(rule['regex'])
+            self.search_strings.append(rule['regex'])
 
 
 class UADBManager(object):
@@ -185,7 +185,7 @@ class UADBManager(object):
 
     def enrich_db(self):
         # the DB file we get is very useful, but inaccurate in places
-        # for vendor names and the like.
+        # for OS and the like.
         # We enrich using a UA parsing lib for better consistency.
 
         wf = open(self.db_file_path, 'w')
@@ -205,22 +205,15 @@ class UADBManager(object):
         wf.close()
 
     def is_too_old(self):
-        stat = os.stat(self.raw_db_file_path)
+        stat = os.stat(self.db_file_path)
         epoch_now = int(time.time())
 
         return((epoch_now - stat.st_mtime) > UA_DB_STALE_SECONDS)
 
     def load_ua_defs(self):
-        with open(self.raw_db_file_path) as f:
+        with open(self.db_file_path) as f:
             for entry in json.load(f):
-                self.ua_db.append({
-                    'vendor': entry.get("vendor"),
-                    'browser_family': entry.get("browser_family"),
-                    'platform': entry.get("platform"),
-                    'userAgent': entry.get("userAgent"),
-                    'deviceCategory': entry.get("deviceCategory"),
-                    'weight': entry.get("weight")
-                })
+                self.ua_db.append(entry)
         return(self.ua_db)
 
     def _get_device_category(self, parsed_ua):
