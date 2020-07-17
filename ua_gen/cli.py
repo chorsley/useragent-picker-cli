@@ -22,6 +22,7 @@ import gzip
 import os
 import time
 import json
+import random
 
 from docopt import docopt
 import requests
@@ -56,30 +57,45 @@ class UAGen(object):
         self.filtered_ua_db = []
         self.ua_rule = None
 
-    def get_ua(self, aliases):
+    def get_ua(self, aliases: list) -> None:
         self.ua_rule = UARuleManager(aliases)
 
         self.ua_rule.build_rules()
         self.filter_uas()
 
+        # TODO: weight
+        return random.choice(self.filtered_ua_db)["userAgent"]
+
     def filter_uas(self):
         for ua_entry in self.ua_db:
-            for criteria in ['platform', 'vendor', 'deviceCategory']:
-                if getattr(self.ua_rule, criteria) and ua_entry.get(criteria) == getattr(self.ua_rule, criteria):
-                    pass
-            else:
-                continue
-            self.filtered_ua_db.append(ua_entry)
-        print(self.filtered_ua_db)
+            #print(ua_entry)
+            if self._match_criteria(ua_entry):
+                self.filtered_ua_db.append(ua_entry)
+        #print(self.filtered_ua_db)
+        #print(self.ua_rule)
+
+    def _match_criteria(self, ua_entry: dict) -> bool:
+        #print(f"Using rule {self.ua_rule}")
+        #print(f"Checking entry: {ua_entry}")
+        for criteria in ['platform', 'vendor', 'deviceCategory']:
+            #print(f"Rule: {getattr(self.ua_rule, criteria)}, {ua_entry.get(criteria)}")
+            #print(getattr(self.ua_rule, criteria))
+            #print(ua_entry.get(criteria))
+            if getattr(self.ua_rule, criteria) != None and ua_entry.get(criteria) != getattr(self.ua_rule, criteria):
+                return False
+        return True
 
 
 class UARuleManager(object):
-    def __init__(self, aliases=None, strmatch=None):
+    def __init__(self, aliases:list=None, strmatch:str=None):
         self.aliases = [] if None else aliases
         self.strmatch = strmatch
         self.platform = None
         self.vendor = None
         self.deviceCategory = None
+
+    def __str__(self):
+        return(f"Rule: platform {self.platform}, vendor {self.vendor}, deviceCategory {self.deviceCategory}")
 
     def build_rules(self):
         for rule in ua_rules:
@@ -87,22 +103,22 @@ class UARuleManager(object):
                 if alias in map(lambda y: y.lower(), rule["aliases"]):
                     self.set_rule(alias, rule)
 
-    def set_rule(self, alias, rule):
-        if not self.vendor and rule.cat['vendor']:
+    def set_rule(self, alias:str, rule:dict) -> None:
+        if not self.vendor and rule['cat'] == 'vendor':
             self.vendor = rule['match']
-        elif rule.cat['vendor']:
+        elif rule["cat"] == 'vendor':
             logger.warn("You already have a browser vendor f{self.vendor} set and you tried to set"
                         "another, but I'm ignoring it: f{alias}")
         
-        if not self.platform and rule.cat['platform']:
+        if not self.platform and rule['cat'] == 'platform':
             self.platform = rule['match']
-        elif rule.cat['platform']:
+        elif rule['cat'] == 'platform':
             logger.warn("You already have an OS f{self.playform} set and you tried to set"
                         "another, but I'm ignoring it: f{alias}")
 
-        if not self.device and rule.cat['deviceCategory']:
-            self.deviceCategory = rule['deviceCategory']
-        elif rule.cat['deviceCategory']:
+        if not self.deviceCategory and rule['cat'] == 'deviceCategory':
+            self.deviceCategory = rule['match']
+        elif rule['cat'] == 'deviceCategory':
             logger.warn("You already have an OS f{self.playform} set and you tried to set")
 
 
@@ -138,7 +154,7 @@ class UADBManager(object):
         with open(self.db_file_path) as f:
             for entry in json.load(f):
                 self.ua_db.append({
-                    'appName': entry.get("appName"),
+                    'vendor': entry.get("vendor"),
                     'platform': entry.get("platform"),
                     'userAgent': entry.get("userAgent"),
                     'deviceCategory': entry.get("deviceCategory"),
