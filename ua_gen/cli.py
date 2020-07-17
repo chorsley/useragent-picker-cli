@@ -30,6 +30,8 @@ from docopt import docopt
 import requests
 from loguru import logger
 
+from user_agents import parse as ua_parse
+
 from ua_gen import ua_rules
 
 UA_DB_URL = 'https://raw.githubusercontent.com/intoli/user-agents/master/src/user-agents.json.gz'
@@ -38,14 +40,13 @@ UA_DB_STALE_SECONDS = 24 * 60 * 60 * 30
 logger.remove()
 logger.add(sys.stderr, format="{message}", level="INFO")
 
+
 class NoUserAgentFoundException(Exception):
     pass
 
 
-def main():
+def main(args):
     """Generates random but realistic user agents on a command line (or via API)"""
-    args = docopt(__doc__)
-
     if (args["--force-update-db"]):
         ua_db = UADBManager()
         ua_db.fetch_db()
@@ -96,42 +97,49 @@ class UAGen(object):
                 self.filtered_ua_db.append(ua_entry)
 
     def _match_criteria(self, ua_entry: dict) -> bool:
-        for criteria in ['platform', 'vendor', 'deviceCategory']:
-            if getattr(self.ua_rule, criteria) != None and ua_entry.get(criteria) != getattr(self.ua_rule, criteria):
+        for criteria in ['platform', 'deviceCategory', 'browser_family']:
+            if (getattr(self.ua_rule, criteria) and \
+                ua_entry.get(criteria) != getattr(self.ua_rule, criteria)):
                 return False
 
-        for regex in self.ua_rule.regexes:
-            if not re.search(regex, ua_entry.get("userAgent", "")):
-                return False
+        for search_string in self.ua_rule.search_strings:
+            if not search_string in ua_entry.get("userAgent", "").lower():
+               return False
 
         return True
 
 
 class UARuleManager(object):
+    """
+    Builds the criteria rules from the user's filter terms and the ua_rules file.
+    """
+
     def __init__(self, aliases:list=None, strmatch:str=None):
         self.strmatch = strmatch
         self.platform = None
-        self.vendor = None
         self.deviceCategory = None
-        self.regexes = []
+        self.browser_family = None
+        self.search_strings = []
         self.aliases = [] if None else aliases
 
     def __str__(self):
-        return(f"Rule: platform {self.platform}, vendor {self.vendor}, deviceCategory {self.deviceCategory}, regex {self.regex}")
+        return(f"Rule: platform {self.platform}, deviceCategory {self.deviceCategory}, browser_family: {self.browser_family}, regex {self.search_strings}")
 
     def build_rules(self):
+        used_aliases = []
+        all_aliases = list(map(lambda x: x.lower(), self.aliases))
+
         for rule in ua_rules:
-            for alias in map(lambda x: x.lower(), self.aliases):
+            for alias in all_aliases:
                 if alias in map(lambda y: y.lower(), rule["aliases"]):
                     self.set_rule(alias, rule)
+                    used_aliases.append(alias)
+
+        for alias in set(all_aliases).difference(set(used_aliases)):
+            logger.info(f"** '{alias}' didn't match any known filters, matching browser strings")
+            self.search_strings.append(alias)
 
     def set_rule(self, alias:str, rule:dict) -> None:
-        if not self.vendor and rule['cat'] == 'vendor':
-            self.vendor = rule['match']
-        elif rule["cat"] == 'vendor':
-            logger.warn("You already have a browser vendor f{self.vendor} set and you tried to set "
-                        "another, but I'm ignoring it: f{alias}")
-        
         if not self.platform and rule['cat'] == 'platform':
             self.platform = rule['match']
         elif rule['cat'] == 'platform':
@@ -144,14 +152,30 @@ class UARuleManager(object):
             logger.warn("You already have an OS f{self.platform} set and you tried to set "
                         "another, but I'm ignoring it: f{alias}")
 
+        if not self.browser_family and rule['cat'] == 'browser_family':
+            self.browser_family = rule['match']
+        elif rule['cat'] == 'browser_family':
+            logger.warn("You already have a browser f{self.browser_family} set and you tried to set "
+                        "another, but I'm ignoring it: f{alias}")
+
         if rule.get('regex'):
-            self.regexes.append(rule['regex'])
+            self.search_strings.append(rule['regex'])
 
 
 class UADBManager(object):
+    """
+    Manages downloading, enriching, updating, and returning the master list
+    of user agent definitions.
+
+    The original UA definitions file has some inaccuracies, notably listing
+    the vendor as Google everywhere, including for IE. Since it has valuable
+    weightings as seen in a user population, we instead do some of our own
+    user agent parsing with user_agents for higher accuracy.
+    """
     def __init__(self):
         self.db_dir = os.path.join(os.path.expanduser("~"), ".ua-gen-cli/")
-        self.db_file_path = os.path.join(self.db_dir, "ua_db.json")
+        self.raw_db_file_path = os.path.join(self.db_dir, "raw_ua_db.json")
+        self.db_file_path = os.path.join(self.db_dir, "enriched_ua_db.json")
 
         if not os.path.exists(self.db_dir):
             os.mkdir(self.db_dir)
@@ -164,10 +188,33 @@ class UADBManager(object):
         r = requests.get(UA_DB_URL, stream=True)
 
         if r.ok:
-            with open(self.db_file_path, "wb") as f:
+            with open(self.raw_db_file_path, "wb") as f:
                 r.raw.decode_content = True
                 gzip_file = gzip.GzipFile(fileobj=r.raw)
                 shutil.copyfileobj(gzip_file, f)
+
+        self.enrich_db()
+
+    def enrich_db(self):
+        # the DB file we get is very useful, but inaccurate in places
+        # for OS and the like.
+        # We enrich using a UA parsing lib for better consistency.
+
+        wf = open(self.db_file_path, 'w')
+
+        entries = []
+
+        with open(self.raw_db_file_path) as rf:
+            for entry in json.load(rf):
+                parsed_ua = ua_parse(entry.get("userAgent"))
+                entry['browser_family'] = parsed_ua.browser.family
+                entry['platform'] = parsed_ua.os.family
+                entry['deviceCategory'] = self._get_device_category(parsed_ua)
+                entries.append(entry)
+
+            wf.write(json.dumps(entries))
+
+        wf.close()
 
     def is_too_old(self):
         stat = os.stat(self.db_file_path)
@@ -178,15 +225,22 @@ class UADBManager(object):
     def load_ua_defs(self):
         with open(self.db_file_path) as f:
             for entry in json.load(f):
-                self.ua_db.append({
-                    'vendor': entry.get("vendor"),
-                    'platform': entry.get("platform"),
-                    'userAgent': entry.get("userAgent"),
-                    'deviceCategory': entry.get("deviceCategory"),
-                    'weight': entry.get("weight")
-                })
+                self.ua_db.append(entry)
         return(self.ua_db)
+
+    def _get_device_category(self, parsed_ua):
+        if parsed_ua.is_mobile:
+            return 'mobile'
+        elif parsed_ua.is_pc:
+            return 'desktop'
+        elif parsed_ua.is_tablet:
+            return 'tablet'
+        elif parsed_ua.is_bot:
+            return 'bot'
+
 
 
 if __name__ == "__main__":
-    main()
+    args = docopt(__doc__)
+
+    main(args)

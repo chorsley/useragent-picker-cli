@@ -3,7 +3,7 @@ Generates random but realistic user agents on a command line (or via API)
 """
 from setuptools import find_packages, setup
 
-dependencies = ['docopt', 'requests', 'loguru']
+dependencies = ['docopt', 'requests', 'loguru', 'ua-parser']
 
 setup(
     name='ua_gen_cli',
