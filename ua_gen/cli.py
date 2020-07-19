@@ -56,7 +56,9 @@ def main(args):
     try:
         print(uagen.get_ua(aliases=args["FILTER"]))
     except NoUserAgentFoundException:
-        logger.error("Sorry, couldn't find any user agents matching your criteria") 
+        logger.error("Sorry, I couldn't find any user agents matching your criteria.\n")
+        logger.error("Remember, the UA list contains agents seen in the wild, so if you want something very exotic, ")
+        logger.error("you might need to go and find it elsewhere.") 
         sys.exit(1)
 
 
@@ -137,7 +139,7 @@ class UARuleManager(object):
                     used_aliases.append(alias)
 
         for alias in set(all_aliases).difference(set(used_aliases)):
-            logger.info(f"** '{alias}' didn't match any known filters, matching browser strings")
+            logger.info(f"** '{alias}' didn't match any known filters, looking for matching browser strings")
             self.search_strings.append(alias)
 
     def set_rule(self, alias:str, rule:dict) -> None:
@@ -186,6 +188,8 @@ class UADBManager(object):
         self.ua_db = []
 
     def fetch_db(self):
+        logger.error("Fetching and enriching user agent DB - we'll be much faster on the next run, scout's honour!")
+
         r = requests.get(UA_DB_URL, stream=True)
 
         if r.ok:
