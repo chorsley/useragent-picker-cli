@@ -78,6 +78,7 @@ class UAGen(object):
         self.selected_ua = None
 
     def get_ua(self, aliases: list) -> None:
+        self.filtered_ua_db = []  # reset for each run of get_ua()
         self.ua_rule = UARuleManager(aliases)
 
         self.ua_rule.build_rules()
