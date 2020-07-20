@@ -3,15 +3,22 @@ Generates random but realistic user agents on a command line (or via API)
 """
 from setuptools import find_packages, setup
 
+from os import path
+this_directory = path.abspath(path.dirname(__file__))
+
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
+
 setup(
     name="useragent-picker-cli",
-    version="0.1.3",
+    version="0.1.4-beta1",
     url="https://github.com/chorsley/useragent-picker-cli",
     license="BSD",
     author="Chris Horsley",
     author_email="cmrhorsley@gmail.com",
     description="Generates random but realistic user agents on a command line (or via API)",
-    long_description=__doc__,
+    long_description=long_description,
+    long_description_content_type='text/markdown'
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     zip_safe=False,
