@@ -21,7 +21,7 @@ def test_anagram_no_param():
     assert exitcode == 0
     assert out.decode('utf-8').count('\n') == 1
     assert len(out) > 20
-    assert len(out) < 200
+    assert len(out) < 500
 
 
 def test_list_filters():
