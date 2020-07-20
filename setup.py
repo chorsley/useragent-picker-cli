@@ -5,7 +5,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="useragent-picker-cli",
-    version="0.1.0",
+    version="0.1.1",
     url="https://github.com/chorsley/useragent-picker-cli",
     license="BSD",
     author="Chris Horsley",
