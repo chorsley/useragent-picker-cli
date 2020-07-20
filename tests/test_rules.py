@@ -186,6 +186,15 @@ def test_android(ua_defs_file):
         assert(uagen.selected_ua[c.UA_PLATFORM] == 'Android')
 
 
+## input tests
+
+def test_case_insensitive(ua_defs_file):
+    for _ in range(1, 100):
+        uagen = cli.UAGen(ua_defs_file)
+        uagen.get_ua(["ANDROID"])
+        assert(uagen.selected_ua[c.UA_PLATFORM] == 'Android')
+
+
 ## filter errors
 
 

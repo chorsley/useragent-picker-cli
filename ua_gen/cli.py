@@ -1,17 +1,19 @@
-"""uagen
+"""uagen - generate realistic, filtered browser useragents.
 
 Usage:
   uagen
   uagen [--force-update-db] FILTER...
+  uagen --list-filters
   uagen (-h | --help)
   uagen --version
 
 Arguments:
   FILTER...
-              Give a number of keyword filters like 'Win', 'Firefox'
+              Give a number of keyword filters like 'win', 'firefox'
 
 Options:
   --force-update-db  Force an update of the UA DB cache
+  --list-filters     Show all available useragent aliases
   -h --help          Show this screen.
   --version          Show version.
 """
@@ -87,12 +89,12 @@ class UARuleManager(object):
         self.strmatch = strmatch
         self.platform = None
         self.deviceCategory = None
-        self.browser_family = None
+        self.browserFamily = None
         self.search_strings = []
         self.aliases = [] if None else aliases
 
     def __str__(self):
-        return(f"Rule: platform {self.platform}, deviceCategory {self.deviceCategory}, browser_family: {self.browser_family}, regex {self.search_strings}")
+        return(f"Rule: platform {self.platform}, deviceCategory {self.deviceCategory}, browserFamily: {self.browserFamily}, regex {self.search_strings}")
 
     def build_rules(self):
         used_aliases = []
@@ -125,27 +127,47 @@ class UARuleManager(object):
             logger.warning(f"* You already have an device type ({self.deviceCategory}) set and you tried to set "
                            f"another, so I'm ignoring '{alias}'")
 
-        if not self.browser_family and rule['cat'] == c.UA_BROWSER_FAMILY:
-            self.browser_family = rule['match']
+        if not self.browserFamily and rule['cat'] == c.UA_BROWSER_FAMILY:
+            self.browserFamily = rule['match']
         elif rule['cat'] == c.UA_BROWSER_FAMILY:
-            logger.warning(f"* You already have a browser family ({self.browser_family}) set and you tried to set "
+            logger.warning(f"* You already have a browser family ({self.browserFamily}) set and you tried to set "
                            f"another, so I'm ignoring '{alias}'")
 
         if rule.get('regex'):
             self.search_strings.append(rule['regex'])
 
 
+def show_aliases():
+    print("These filters and filter aliases are supported by uagen:")
+
+    heading = None
+
+    for rule in ua_rules:
+        head_candidate = c.UA_PROP_LABELS.get(rule['cat'])
+        if heading != head_candidate:
+            print(f"\n{head_candidate}")
+            heading = head_candidate
+
+        print(f"   {rule['match']}  [{', '.join(rule['aliases'])}]")
+
+    print("\nUse can also use useragent filters that aren't in this list - uagen will just search useragent strings for them.")
+
+
 def start_uagen(args):
     """Generates random but realistic user agents on a command line (or via API)"""
-    uagen = UAGen(force_db_update=bool(args["--force-update-db"]))
 
-    try:
-        print(uagen.get_ua(aliases=args["FILTER"]))
-    except NoUserAgentFoundException:
-        logger.error("Sorry, I couldn't find any user agents matching your criteria.\n")
-        logger.error("Remember, the UA list contains agents seen in the wild, so if you want something very exotic, ")
-        logger.error("you might need to go and find it elsewhere.") 
-        sys.exit(1)
+    if args["--list-filters"]:
+        show_aliases()
+    else:
+        uagen = UAGen(force_db_update=bool(args["--force-update-db"]))
+
+        try:
+            print(uagen.get_ua(aliases=args["FILTER"]))
+        except NoUserAgentFoundException:
+            logger.error("Sorry, I couldn't find any user agents matching your criteria.\n")
+            logger.error("Remember, the UA list contains agents seen in the wild, so if you want something very exotic, ")
+            logger.error("you might need to go and find it elsewhere.") 
+            sys.exit(1)
 
 
 def main():
