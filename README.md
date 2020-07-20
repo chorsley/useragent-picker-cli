@@ -17,12 +17,11 @@ You want to:
 
 # Installation
 
-If you don't use `pipsi`, you're missing out.
-Here are [installation instructions](https://github.com/mitsuhiko/pipsi#readme).
+    $ pip install --user useragent-picker-cli
 
-Simply run:
+    Alternatively, visit https://pypi.org/project/useragent-picker-cli/ to download the install files directly.
 
-    $ pipsi install ua-gen-cli
+    Once installed, the command you run is `uagen`.
 
 # Usage
 
@@ -38,14 +37,14 @@ There are many aliases, so just try what makes sense to you and it will probably
 
 If you want something a little niche that's not in the supported keyword list, uagen will search through browser UAs as a fallback:
 
-    $ python3 -mua_gen.cli trident
+    $ uagen trident
     ** 'trident' didn't match any known filters, looking for matching browser strings
     Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko
 
-`uagen` simply outputs a single user agent matching your criteria. This can be combined with HTTP agents like this:
+`uagen` simply outputs a single user agent matching your criteria. This can be combined with CLI HTTP tools like this:
 
-    $ curl --user-agent "`uagen`" http://example.com
-    $ curl -v --user-agent "uagen nokia mobile`" http://example.com
+    $ curl --user-agent "$(uagen)" http://example.com
+    $ curl -v --user-agent "$(uagen nokia mobile)" http://example.com
     ...
     > GET / HTTP/1.1
     > Host: example.com
@@ -53,14 +52,14 @@ If you want something a little niche that's not in the supported keyword list, u
 
 You could also alias this for convenience:
 
-    $ alias uacurl='curl --user-agent "`uagen`"
+    $ alias uacurl='curl --user-agent "$(uagen)"
     $ uacurl -v http://example.com
     > GET / HTTP/1.1
     > Host: example.com
     > User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36
 
 Since `uagen` respects weightings based on usage in the wild, if you ran it 1000 times, you'd get a rough % breakdown of UAs
-like actual usage.
+like actual usage. TODO: weightings coming soon.
 
 ## Programatic usage
 
@@ -80,4 +79,3 @@ The user agent data file used lives at `$HOME/.ua_cli_gen/enriched_ua_db.json`, 
 ## Acknowledgements
 
 This project was inspired by and relies on data from https://github.com/intoli/user-agents.
-
