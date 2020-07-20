@@ -1,0 +1,5 @@
+- uses: fedora-python/tox-github-action
+  with:
+    # The tox environment to run
+    # Default: py38 (subject to change as new Python releases come out)
+    tox_env: py37
