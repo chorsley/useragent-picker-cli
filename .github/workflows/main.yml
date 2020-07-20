@@ -1,5 +1,18 @@
-- uses: fedora-python/tox-github-action
-  with:
-    # The tox environment to run
-    # Default: py38 (subject to change as new Python releases come out)
-    tox_env: py37
+name: Run Tox tests
+
+jobs:
+  tox_test:
+    name: Tox test
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run Tox tests
+      id: test
+      uses: fedora-python/tox-github-action@master
+      with:
+        tox_env: ${{ matrix.tox_env }}
+    strategy:
+      matrix:
+        tox_env: [py36, py37, py38, py39]
+
+    # Use GitHub's Linux Docker host
+    runs-on: ubuntu-latest
