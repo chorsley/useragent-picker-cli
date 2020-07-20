@@ -98,8 +98,8 @@ class UARuleManager(object):
         used_aliases = []
         all_aliases = list(map(lambda x: x.lower(), self.aliases))
 
-        for rule in ua_rules:
-            for alias in all_aliases:
+        for alias in all_aliases:
+            for rule in ua_rules:
                 if alias in map(lambda y: y.lower(), rule["aliases"]):
                     self.set_rule(alias, rule)
                     used_aliases.append(alias)

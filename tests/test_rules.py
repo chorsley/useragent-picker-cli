@@ -213,20 +213,21 @@ def test_not_recognised_alias_plus_filter(ua_defs_file):
         assert(uagen.selected_ua[c.UA_DEVICE_CATEGORY] == "mobile")
 
 
-def test_warn_on_conflicting_platform(ua_defs_file, capsys):
-    captured = capsys.readouterr()
+@pytest.mark.warnings
+def test_warn_on_conflicting_platform(ua_defs_file, caplog):
     uagen = cli.UAGen(ua_defs_file)
     uagen.get_ua(["safari", "firefox"])
+    # captured = caplog.text
     assert(uagen.selected_ua[c.UA_BROWSER_FAMILY] == "Safari")
-    assert(captured.err ==
-           "* You already have a browser family (Safari) set and you tried to set another, so I'm ignoring 'firefox'")
+    assert("* You already have a browser family (Safari) set and you tried to set another, so I'm ignoring 'firefox'"
+           in caplog.text)
 
 
-def test_warn_on_conflicting_platform_reverse(ua_defs_file, capsys):
-    captured = capsys.readouterr()
+@pytest.mark.warnings
+def test_warn_on_conflicting_platform_reverse(caplog, ua_defs_file):
+    from sys import stderr
     uagen = cli.UAGen(ua_defs_file)
     uagen.get_ua(["firefox", "safari"])
     assert(uagen.selected_ua[c.UA_BROWSER_FAMILY] == "Firefox")
-    assert(captured.err == 
-           "* You already have a browser family (Firefox) set and you tried to set another, so I'm ignoring 'safari'")
-
+    assert("* You already have a browser family (Firefox) set and you tried to set another, so I'm ignoring 'safari'"
+           in caplog.text)
