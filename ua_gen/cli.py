@@ -259,103 +259,22 @@ class UARuleManager(object):
         if not self.platform and rule['cat'] == 'platform':
             self.platform = rule['match']
         elif rule['cat'] == 'platform':
-            logger.warn("You already have an OS f{self.platform} set and you tried to set "
-                        "another, but I'm ignoring it: f{alias}")
-
+            logger.warning(f"* You already have an OS ({self.platform}) set and you tried to set "
+                            "another, so I'm ignoring {alias}")
         if not self.deviceCategory and rule['cat'] == 'deviceCategory':
             self.deviceCategory = rule['match']
         elif rule['cat'] == 'deviceCategory':
-            logger.warn("You already have an OS f{self.platform} set and you tried to set "
-                        "another, but I'm ignoring it: f{alias}")
+            logger.warning(f"* You already have an OS {self.platform} set and you tried to set "
+                            "another, so I'm ignoring '{alias}'")
 
         if not self.browser_family and rule['cat'] == 'browser_family':
             self.browser_family = rule['match']
         elif rule['cat'] == 'browser_family':
-            logger.warn("You already have a browser f{self.browser_family} set and you tried to set "
-                        "another, but I'm ignoring it: f{alias}")
+            logger.warning(f"* You already have a browser {self.browser_family} set and you tried to set "
+                            "another, so I'm ignoring '{alias}'")
 
         if rule.get('regex'):
             self.search_strings.append(rule['regex'])
-
-
-class UADBManager(object):
-    """
-    Manages downloading, enriching, updating, and returning the master list
-    of user agent definitions.
-
-    The original UA definitions file has some inaccuracies, notably listing
-    the vendor as Google everywhere, including for IE. Since it has valuable
-    weightings as seen in a user population, we instead do some of our own
-    user agent parsing with user_agents for higher accuracy.
-    """
-    def __init__(self):
-        self.db_dir = os.path.join(os.path.expanduser("~"), ".ua-gen-cli/")
-        self.raw_db_file_path = os.path.join(self.db_dir, "raw_ua_db.json")
-        self.db_file_path = os.path.join(self.db_dir, "enriched_ua_db.json")
-
-        if not os.path.exists(self.db_dir):
-            os.mkdir(self.db_dir)
-
-        logger.debug(f"DB file: {self.db_file_path}")
-
-        self.ua_db = []
-
-    def fetch_db(self):
-        logger.error("Fetching and enriching user agent DB - we'll be much faster on the next run, scout's honour!")
-
-        r = requests.get(UA_DB_URL, stream=True)
-
-        if r.ok:
-            with open(self.raw_db_file_path, "wb") as f:
-                r.raw.decode_content = True
-                gzip_file = gzip.GzipFile(fileobj=r.raw)
-                shutil.copyfileobj(gzip_file, f)
-
-        self.enrich_db()
-
-    def enrich_db(self):
-        # the DB file we get is very useful, but inaccurate in places
-        # for OS and the like.
-        # We enrich using a UA parsing lib for better consistency.
-
-        wf = open(self.db_file_path, 'w')
-
-        entries = []
-
-        with open(self.raw_db_file_path) as rf:
-            for entry in json.load(rf):
-                parsed_ua = ua_parse(entry.get("userAgent"))
-                entry['browser_family'] = parsed_ua.browser.family
-                entry['platform'] = parsed_ua.os.family
-                entry['deviceCategory'] = self._get_device_category(parsed_ua)
-                entries.append(entry)
-
-            wf.write(json.dumps(entries))
-
-        wf.close()
-
-    def is_too_old(self):
-        stat = os.stat(self.db_file_path)
-        epoch_now = int(time.time())
-
-        return((epoch_now - stat.st_mtime) > UA_DB_STALE_SECONDS)
-
-    def load_ua_defs(self):
-        with open(self.db_file_path) as f:
-            for entry in json.load(f):
-                self.ua_db.append(entry)
-        return(self.ua_db)
-
-    def _get_device_category(self, parsed_ua):
-        if parsed_ua.is_mobile:
-            return 'mobile'
-        elif parsed_ua.is_pc:
-            return 'desktop'
-        elif parsed_ua.is_tablet:
-            return 'tablet'
-        elif parsed_ua.is_bot:
-            return 'bot'
-
 
 
 if __name__ == "__main__":
