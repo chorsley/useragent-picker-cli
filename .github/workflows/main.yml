@@ -7,9 +7,9 @@ jobs:
   tox_test:
     name: Tox test
     steps:
-    - uses: VaultVulp/action-pipenv@v2.0.1
-      with:
-        command: install -d # Install all dependencies, including development ones
+    #- uses: VaultVulp/action-pipenv@v2.0.1
+    #  with:
+    #    command: install -d # Install all dependencies, including development ones
     - uses: actions/checkout@v2
     - name: Run Tox tests
       id: test
