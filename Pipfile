@@ -13,6 +13,7 @@ loguru = "*"
 docopt = "*"
 requests = "*"
 ua-parser = "*"
+user-agents = "*"
 
 [requires]
 python_version = "3.6"

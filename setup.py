@@ -28,6 +28,7 @@ setup(
         "requests==2.24.0",
         "ua-parser==0.10.0",
         "urllib3==1.25.9; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4' and python_version < '4'",
+        "user-agents==2.1",
     ],
     dependency_links=[],
     entry_points={"console_scripts": ["uagen = ua_gen.cli:main",],},
