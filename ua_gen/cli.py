@@ -29,22 +29,7 @@ from . import consts as c
 
 from .logging import logger
 from .db_manager import UADBManager
-
-class NoUserAgentFoundException(Exception):
-    pass
-
-
-def main(args):
-    """Generates random but realistic user agents on a command line (or via API)"""
-    uagen = UAGen(force_db_update=bool(args["--force-update-db"]))
-
-    try:
-        print(uagen.get_ua(aliases=args["FILTER"]))
-    except NoUserAgentFoundException:
-        logger.error("Sorry, I couldn't find any user agents matching your criteria.\n")
-        logger.error("Remember, the UA list contains agents seen in the wild, so if you want something very exotic, ")
-        logger.error("you might need to go and find it elsewhere.") 
-        sys.exit(1)
+from .exceptions import NoUserAgentFoundException
 
 
 class UAGen(object):
@@ -148,6 +133,19 @@ class UARuleManager(object):
 
         if rule.get('regex'):
             self.search_strings.append(rule['regex'])
+
+
+def main(args):
+    """Generates random but realistic user agents on a command line (or via API)"""
+    uagen = UAGen(force_db_update=bool(args["--force-update-db"]))
+
+    try:
+        print(uagen.get_ua(aliases=args["FILTER"]))
+    except NoUserAgentFoundException:
+        logger.error("Sorry, I couldn't find any user agents matching your criteria.\n")
+        logger.error("Remember, the UA list contains agents seen in the wild, so if you want something very exotic, ")
+        logger.error("you might need to go and find it elsewhere.") 
+        sys.exit(1)
 
 
 def main_handle_args():
