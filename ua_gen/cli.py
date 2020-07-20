@@ -135,7 +135,7 @@ class UARuleManager(object):
             self.search_strings.append(rule['regex'])
 
 
-def main(args):
+def start_uagen(args):
     """Generates random but realistic user agents on a command line (or via API)"""
     uagen = UAGen(force_db_update=bool(args["--force-update-db"]))
 
@@ -148,11 +148,11 @@ def main(args):
         sys.exit(1)
 
 
-def main_handle_args():
+def main():
     args = docopt(__doc__)
 
-    main(args)
+    start_uagen(args)
 
 
 if __name__ == "__main__":
-    main_handle_args()
+    main()
