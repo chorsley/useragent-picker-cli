@@ -18,7 +18,7 @@ setup(
     author_email="cmrhorsley@gmail.com",
     description="Generates random but realistic user agents on a command line (or via API)",
     long_description=long_description,
-    long_description_content_type='text/markdown'
+    long_description_content_type='text/markdown',
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     zip_safe=False,
