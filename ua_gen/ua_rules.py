@@ -7,7 +7,7 @@ ua_rules = [
     {'match': 'mobile', 'aliases': ['mobile', 'mob'], 'cat': 'deviceCategory'},
     {'match': 'desktop', 'aliases': ['desktop', 'desk'], 'cat': 'deviceCategory'},
     {'match': 'tablet', 'aliases': ['tablet', 'tab'], 'cat': 'deviceCategory'},
-    
+
     {'match': 'Firefox', 'aliases': ['netscape', 'firefox', 'ff'], 'cat': 'browser_family'},
     {'match': 'IE', 'aliases': ['ie', 'msie', 'iexplore', 'internet explorer'], 'cat': 'browser_family'},
     {'match': 'Edge', 'aliases': ['edge'], 'cat': 'browser_family'},
@@ -19,7 +19,7 @@ ua_rules = [
     {'match': 'Facebook', 'aliases': ['facebook', 'fb'], 'cat': 'browser_family'},
     {'match': 'UC Browser', 'aliases': ['uc', 'ucbrowser'], 'cat': 'browser_family'},
     {'match': 'QQ Browser', 'aliases': ['qq', 'qqbrowser'], 'cat': 'browser_family'},
-    
+
     {'match': 'Windows', 'aliases': ['win32', 'win', 'windows'], 'cat': 'platform'},
     {'match': 'Mac OS X', 'aliases': ['macintel', 'osx', 'Mac', 'MacOS'], 'cat': 'platform'},
     {'match': 'Linux', 'aliases': ['linux', 'x11'], 'cat': 'platform'},
