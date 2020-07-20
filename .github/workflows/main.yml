@@ -1,3 +1,6 @@
+# Trigger on push
+on: push
+
 name: Run Tox tests
 
 jobs:
