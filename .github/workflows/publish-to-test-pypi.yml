@@ -5,6 +5,7 @@ on: push
 jobs:
   build-n-publish:
     name: Build and publish Python 🐍 distributions 📦 to PyPI and TestPyPI
+    needs: tox_test
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@master
