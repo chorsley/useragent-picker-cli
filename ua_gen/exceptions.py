@@ -1,0 +1,3 @@
+
+class NoUserAgentFoundException(Exception):
+    pass
