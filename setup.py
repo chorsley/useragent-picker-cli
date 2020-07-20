@@ -4,9 +4,9 @@ Generates random but realistic user agents on a command line (or via API)
 from setuptools import find_packages, setup
 
 setup(
-    name="ua_gen_cli",
+    name="useragent-picker-cli",
     version="0.1.0",
-    url="https://github.com/chorsley/ua-gen-cli",
+    url="https://github.com/chorsley/useragent-picker-cli",
     license="BSD",
     author="Chris Horsley",
     author_email="cmrhorsley@gmail.com",
