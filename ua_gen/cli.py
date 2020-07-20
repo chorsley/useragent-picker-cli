@@ -32,10 +32,8 @@ from loguru import logger
 
 from user_agents import parse as ua_parse
 
-from ua_gen import ua_rules
-
-UA_DB_URL = 'https://raw.githubusercontent.com/intoli/user-agents/master/src/user-agents.json.gz'
-UA_DB_STALE_SECONDS = 24 * 60 * 60 * 30
+from . import ua_rules
+from . import consts as c
 
 logger.remove()
 logger.add(sys.stderr, format="{message}", level="INFO")
@@ -84,7 +82,7 @@ class UADBManager(object):
     def fetch_db(self):
         logger.error("Fetching and enriching user agent DB - we'll be much faster on the next run, scout's honour!")
 
-        r = requests.get(UA_DB_URL, stream=True)
+        r = requests.get(c.UA_DB_URL, stream=True)
 
         if r.ok:
             with open(self.raw_db_file_path, "wb") as f:
@@ -105,7 +103,7 @@ class UADBManager(object):
 
         with open(self.raw_db_file_path) as rf:
             for entry in json.load(rf):
-                parsed_ua = ua_parse(entry.get("userAgent"))
+                parsed_ua = ua_parse(entry.get(c.UA_USERAGENT))
                 entry = self.update_ua_db_entry(entry, parsed_ua)
                 entries.append(entry)
 
@@ -114,37 +112,37 @@ class UADBManager(object):
         wf.close()
 
     def update_ua_db_entry(self, entry, parsed_ua):
-        entry['browser_family'] = parsed_ua.browser.family
-        entry['platform'] = parsed_ua.os.family
-        entry['deviceCategory'] = self._get_device_category(parsed_ua)
+        entry[c.UA_BROWSER_FAMILY] = parsed_ua.browser.family
+        entry[c.UA_PLATFORM] = parsed_ua.os.family
+        entry[c.UA_DEVICE_CATEGORY] = self._get_device_category(parsed_ua)
 
         # we need a more granular setting, so we split some compound family labels up
-        if entry['browser_family'] == "Chrome Mobile":
-            entry['browser_family'] = "Chrome"
-            entry['deviceCategory'] = "mobile"
-        if entry['browser_family'] == "Chrome Mobile iOS":
-            entry['browser_family'] = "Chrome"
-            entry['deviceCategory'] = "mobile"
-            entry['platform'] = "iOS"
-        if entry['browser_family'] == "Chrome Mobile WebView":
-            entry['browser_family'] = "Chrome"
-            entry['deviceCategory'] = "mobile"
-        if entry['browser_family'] == "Edge Mobile":
-            entry['browser_family'] = "Edge"
-            entry['deviceCategory'] = "mobile"
-        elif entry['browser_family'] == "Mobile Safari":
-            entry['browser_family'] = "Safari"
-            entry['deviceCategory'] = "mobile"
-        elif entry['browser_family'] == "QQ Browser Mobile":
-            entry['browser_family'] = "QQ Browser"
-            entry['deviceCategory'] = "mobile"
-        elif entry['browser_family'] == "UC Browser Mobile":
-            entry['browser_family'] = "UC Browser"
-            entry['deviceCategory'] = "mobile"
-        elif entry['browser_family'] == "Firefox iOS":
-            entry['browser_family'] = "Firefox"
-            entry['deviceCategory'] = "mobile"
-            entry['platform'] = "iOS"
+        if entry[c.UA_BROWSER_FAMILY] == "Chrome Mobile":
+            entry[c.UA_BROWSER_FAMILY] = "Chrome"
+            entry[c.UA_DEVICE_CATEGORY] = "mobile"
+        if entry[c.UA_BROWSER_FAMILY] == "Chrome Mobile iOS":
+            entry[c.UA_BROWSER_FAMILY] = "Chrome"
+            entry[c.UA_DEVICE_CATEGORY] = "mobile"
+            entry[c.UA_PLATFORM] = "iOS"
+        if entry[c.UA_BROWSER_FAMILY] == "Chrome Mobile WebView":
+            entry[c.UA_BROWSER_FAMILY] = "Chrome"
+            entry[c.UA_DEVICE_CATEGORY] = "mobile"
+        if entry[c.UA_BROWSER_FAMILY] == "Edge Mobile":
+            entry[c.UA_BROWSER_FAMILY] = "Edge"
+            entry[c.UA_DEVICE_CATEGORY] = "mobile"
+        elif entry[c.UA_BROWSER_FAMILY] == "Mobile Safari":
+            entry[c.UA_BROWSER_FAMILY] = "Safari"
+            entry[c.UA_DEVICE_CATEGORY] = "mobile"
+        elif entry[c.UA_BROWSER_FAMILY] == "QQ Browser Mobile":
+            entry[c.UA_BROWSER_FAMILY] = "QQ Browser"
+            entry[c.UA_DEVICE_CATEGORY] = "mobile"
+        elif entry[c.UA_BROWSER_FAMILY] == "UC Browser Mobile":
+            entry[c.UA_BROWSER_FAMILY] = "UC Browser"
+            entry[c.UA_DEVICE_CATEGORY] = "mobile"
+        elif entry[c.UA_BROWSER_FAMILY] == "Firefox iOS":
+            entry[c.UA_BROWSER_FAMILY] = "Firefox"
+            entry[c.UA_DEVICE_CATEGORY] = "mobile"
+            entry[c.UA_PLATFORM] = "iOS"
 
         return entry
 
@@ -156,7 +154,7 @@ class UADBManager(object):
             return True   # actually doesn't exist, but that's too old for our purposes
         epoch_now = int(time.time())
 
-        return((epoch_now - stat.st_mtime) > UA_DB_STALE_SECONDS)
+        return((epoch_now - stat.st_mtime) > c.UA_DB_STALE_SECONDS)
 
     @property
     def no_db_file_present(self):
@@ -205,7 +203,7 @@ class UAGen(object):
             self.selected_ua = random.choice(self.filtered_ua_db)
         except IndexError:  # nothing in the list
             raise NoUserAgentFoundException("No user agents matched your filter criteria")
-        return self.selected_ua["userAgent"]
+        return self.selected_ua[c.UA_USERAGENT]
 
     def filter_uas(self):
         for ua_entry in self.ua_db:
@@ -213,13 +211,13 @@ class UAGen(object):
                 self.filtered_ua_db.append(ua_entry)
 
     def _match_criteria(self, ua_entry: dict) -> bool:
-        for criteria in ['platform', 'deviceCategory', 'browser_family']:
+        for criteria in [c.UA_PLATFORM, c.UA_DEVICE_CATEGORY, c.UA_BROWSER_FAMILY]:
             if (getattr(self.ua_rule, criteria) and \
                 ua_entry.get(criteria) != getattr(self.ua_rule, criteria)):
                 return False
 
         for search_string in self.ua_rule.search_strings:
-            if not search_string in ua_entry.get("userAgent", "").lower():
+            if not search_string in ua_entry.get(c.UA_USERAGENT, "").lower():
                return False
 
         return True
@@ -256,20 +254,20 @@ class UARuleManager(object):
             self.search_strings.append(alias)
 
     def set_rule(self, alias:str, rule:dict) -> None:
-        if not self.platform and rule['cat'] == 'platform':
+        if not self.platform and rule['cat'] == c.UA_PLATFORM:
             self.platform = rule['match']
-        elif rule['cat'] == 'platform':
+        elif rule['cat'] == c.UA_PLATFORM:
             logger.warning(f"* You already have an OS ({self.platform}) set and you tried to set "
                             "another, so I'm ignoring {alias}")
-        if not self.deviceCategory and rule['cat'] == 'deviceCategory':
+        if not self.deviceCategory and rule['cat'] == c.UA_DEVICE_CATEGORY:
             self.deviceCategory = rule['match']
-        elif rule['cat'] == 'deviceCategory':
+        elif rule['cat'] == c.UA_DEVICE_CATEGORY:
             logger.warning(f"* You already have an OS {self.platform} set and you tried to set "
                             "another, so I'm ignoring '{alias}'")
 
-        if not self.browser_family and rule['cat'] == 'browser_family':
+        if not self.browser_family and rule['cat'] == c.UA_BROWSER_FAMILY:
             self.browser_family = rule['match']
-        elif rule['cat'] == 'browser_family':
+        elif rule['cat'] == c.UA_BROWSER_FAMILY:
             logger.warning(f"* You already have a browser {self.browser_family} set and you tried to set "
                             "another, so I'm ignoring '{alias}'")
 
