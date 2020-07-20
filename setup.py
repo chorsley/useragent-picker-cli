@@ -11,7 +11,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name="useragent-picker-cli",
-    version="0.1.4-beta1",
+    version="0.1.4",
     url="https://github.com/chorsley/useragent-picker-cli",
     license="BSD",
     author="Chris Horsley",
