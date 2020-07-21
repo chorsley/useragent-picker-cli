@@ -19,9 +19,9 @@ You want to:
 
     $ pip install --user useragent-picker-cli
 
-    Alternatively, visit https://pypi.org/project/useragent-picker-cli/ to download the install files directly.
+Alternatively, visit https://pypi.org/project/useragent-picker-cli/ to download the install files directly.
 
-    Once installed, the command you run is `uagen`.
+Once installed, the command you run is `uagen`.
 
 # Usage
 
