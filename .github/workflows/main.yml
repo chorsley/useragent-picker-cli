@@ -13,7 +13,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Run Tox tests
       id: test
-      uses: fedora-python/tox-github-action@master
+      uses: fedora-python/tox-github-action@main
       with:
         tox_env: ${{ matrix.tox_env }}
     strategy:
@@ -29,7 +29,7 @@ jobs:
     needs: tox_test
     runs-on: ubuntu-18.04
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@main
     - name: Set up Python 3.7
       uses: actions/setup-python@v1
       with:
@@ -39,13 +39,13 @@ jobs:
         python setup.py bdist_wheel --universal
 
     - name: Publish distribution 📦 to Test PyPI
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@main
       with:
         password: ${{ secrets.test_pypi_password }}
         repository_url: https://test.pypi.org/legacy/
         skip_existing: true
     - name: Publish distribution 📦 to PyPI
       if: startsWith(github.ref, 'refs/tags')
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@main
       with:
         password: ${{ secrets.pypi_password }}
