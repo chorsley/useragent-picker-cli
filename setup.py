@@ -31,7 +31,7 @@ setup(
         "docopt==0.6.2",
         "idna==2.10; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
         "immutables==0.14; python_version >= '3.5'",
-        "loguru==0.5.1",
+        "loguru==0.5.2",
         "requests==2.24.0",
         "ua-parser==0.10.0",
         "urllib3==1.25.9; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4' and python_version < '4'",
