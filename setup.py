@@ -26,7 +26,7 @@ setup(
     install_requires=[
         "aiocontextvars==0.2.2; python_version < '3.7'",
         "certifi==2020.6.20",
-        "chardet==3.0.4",
+        "chardet==4.0.0",
         "contextvars==2.4; python_version < '3.7'",
         "docopt==0.6.2",
         "idna==2.10; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
