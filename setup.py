@@ -30,7 +30,7 @@ setup(
         "contextvars==2.4; python_version < '3.7'",
         "docopt==0.6.2",
         "idna==2.10; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
-        "immutables==0.14; python_version >= '3.5'",
+        "immutables==0.15; python_version >= '3.5'",
         "loguru==0.5.1",
         "requests==2.24.0",
         "ua-parser==0.10.0",
